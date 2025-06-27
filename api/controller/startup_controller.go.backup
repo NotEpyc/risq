@@ -1,0 +1,249 @@
+package controller
+
+import (
+	"fmt"
+	"strings"
+	"risq_backend/internal/contextmem"
+	"risq_backend/internal/risk"
+	"risq_backend/internal/startup"
+	"risq_backend/pkg/logger"
+	"risq_backend/pkg/response"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+)
+
+type StartupController struct {
+	startupService    startup.Service
+	riskService       risk.Service
+	contextMemService contextmem.Service
+	eventManager      EventManagerInterface
+}
+
+// EventManagerInterface defines the interface for event publishing
+type EventManagerInterface interface {
+	PublishStartupOnboarded(startupID, userID uuid.UUID, startupData, founderCV, businessPlan map[string]interface{}) error
+}
+
+func NewStartupController(startupService startup.Service, riskService risk.Service, contextMemService contextmem.Service) *StartupController {
+	return &StartupController{
+		startupService:    startupService,
+		riskService:       riskService,
+		contextMemService: contextMemService,
+		eventManager:      nil, // Will be set by the app
+	}
+}
+
+// SetEventManager sets the event manager for publishing events
+func (c *StartupController) SetEventManager(eventManager EventManagerInterface) {
+	c.eventManager = eventManager
+}
+
+func (c *StartupController) Submit(ctx *fiber.Ctx) error {
+	fmt.Println("=== STEP 1: Starting Submit function")
+	
+	// Try parsing directly into the struct
+	var input startup.StartupOnboardingInput
+	fmt.Println("=== STEP 2: Starting BodyParser")
+	if err := ctx.BodyParser(&input); err != nil {
+		fmt.Printf("=== ERROR in BodyParser: %v\n", err)
+		
+		// Check if it's a JSON unmarshal error with specific field
+		if strings.Contains(err.Error(), "implementation_plan") {
+			fmt.Println("=== FOUND THE ISSUE: implementation_plan field parsing error!")
+			return response.BadRequest(ctx, "implementation_plan field has wrong type. Expected string, got object", err)
+		}
+		
+		return response.BadRequest(ctx, "Invalid input", err)
+	}
+
+	fmt.Println("=== STEP 3: BodyParser succeeded")
+	fmt.Printf("=== SUCCESS: Parsed startup: %s\n", input.Name)
+	
+	// Continue with basic validation
+	if input.Name == "" {
+		return response.BadRequest(ctx, "Startup name is required", nil)
+	}
+	
+	fmt.Println("=== STEP 4: Basic validation passed")
+	
+	// Get user ID from context
+	userIDInterface := ctx.Locals("user_id")
+	if userIDInterface == nil {
+		return response.Unauthorized(ctx, "User not authenticated")
+	}
+
+	userID, err := uuid.Parse(userIDInterface.(string))
+	if err != nil {
+		return response.BadRequest(ctx, "Invalid user ID", err)
+	}
+	
+	fmt.Printf("=== STEP 5: Got user ID: %s\n", userID)
+	
+	// For now, return success to test if the parsing works
+	return response.Success(ctx, "Startup parsing successful", map[string]interface{}{
+		"name": input.Name,
+		"industry": input.Industry,
+		"funding_stage": input.FundingStage,
+	})
+
+	logger.Infof("Successfully parsed input: %+v", input)
+
+	// Basic input validation
+	if input.Name == "" {
+		return response.BadRequest(ctx, "Startup name is required", nil)
+	}
+	if input.Industry == "" {
+		return response.BadRequest(ctx, "Industry is required", nil)
+	}
+	if input.FundingStage == "" {
+		return response.BadRequest(ctx, "Funding stage is required", nil)
+	}
+	if input.Location == "" {
+		return response.BadRequest(ctx, "Location is required", nil)
+	}
+
+	// Get user ID from context (set by JWT middleware)
+	userIDInterface := ctx.Locals("user_id")
+	if userIDInterface == nil {
+		return response.Unauthorized(ctx, "User not authenticated")
+	}
+
+	userID, err := uuid.Parse(userIDInterface.(string))
+	if err != nil {
+		return response.BadRequest(ctx, "Invalid user ID", err)
+	}
+
+	// Check if user already has a startup
+	existingStartup, err := c.startupService.GetByUserID(ctx.Context(), userID)
+	if err == nil && existingStartup != nil {
+		return response.BadRequest(ctx, "User already has a startup profile", nil)
+	}
+
+	// Create startup with user linking
+	startup, err := c.startupService.CreateWithUserLink(ctx.Context(), input, userID)
+	if err != nil {
+		logger.Errorf("Failed to create startup: %v", err)
+		return response.InternalError(ctx, "Failed to create startup", err)
+	}
+
+	// Create initial risk profile
+	startupInfo := formatStartupInfo(startup)
+	riskProfile, err := c.riskService.CreateInitialProfile(ctx.Context(), startup.ID, startupInfo)
+	if err != nil {
+		logger.Errorf("Failed to create initial risk profile: %v", err)
+		// Continue without failing the whole request
+	}
+
+	// Store startup context in memory for future decisions
+	metadata := map[string]interface{}{
+		"type":      "startup_onboarding",
+		"industry":  startup.Industry,
+		"stage":     startup.FundingStage,
+		"team_size": startup.TeamSize,
+		"location":  startup.Location,
+	}
+
+	if err := c.contextMemService.StoreStartupContext(ctx.Context(), startup.ID, startupInfo, metadata); err != nil {
+		logger.Errorf("Failed to store startup context: %v", err)
+		// Continue without failing the whole request
+	}
+
+	// Publish startup onboarded event to trigger the event-driven flow
+	if c.eventManager != nil {
+		startupData := map[string]interface{}{
+			"id":             startup.ID.String(),
+			"name":           startup.Name,
+			"description":    startup.Description,
+			"industry":       startup.Industry,
+			"sector":         startup.Industry, // Using industry as sector for now
+			"funding_stage":  startup.FundingStage,
+			"location":       startup.Location,
+			"founded_date":   startup.FoundedDate,
+			"team_size":      startup.TeamSize,
+			"target_market":  fmt.Sprintf("%s-%s", startup.Industry, startup.Location),
+			"business_model": "B2B", // Default business model - could be extracted from input
+		}
+
+		founderCV := map[string]interface{}{
+			"experience":   "Startup founder with industry experience",
+			"skills":       []string{"Leadership", "Business Development", "Strategic Planning"},
+			"education":    "MBA/Technical Background",
+			"achievements": []string{"Previous startup experience", "Industry expertise"},
+		}
+
+		businessPlan := map[string]interface{}{
+			"description":           startup.Description,
+			"market_opportunity":    fmt.Sprintf("Targeting %s market in %s", startup.Industry, startup.Location),
+			"competitive_advantage": "Innovative approach to solving industry problems",
+			"financial_projections": map[string]interface{}{
+				"revenue_target": "TBD",
+				"growth_rate":    "TBD",
+			},
+		}
+
+		if err := c.eventManager.PublishStartupOnboarded(startup.ID, userID, startupData, founderCV, businessPlan); err != nil {
+			logger.Errorf("Failed to publish startup onboarded event: %v", err)
+			// Continue without failing the whole request
+		} else {
+			logger.Infof("Published startup onboarded event for startup %s", startup.ID)
+		}
+	}
+
+	responseData := map[string]interface{}{
+		"startup":      startup,
+		"risk_profile": riskProfile,
+		"message":      "Startup profile created successfully and event-driven analysis initiated",
+	}
+
+	return response.Success(ctx, "Startup onboarded successfully", responseData)
+}
+
+func (c *StartupController) GetByID(ctx *fiber.Ctx) error {
+	startupIDStr := ctx.Params("id")
+	startupID, err := uuid.Parse(startupIDStr)
+	if err != nil {
+		return response.BadRequest(ctx, "Invalid startup ID", err)
+	}
+
+	startup, err := c.startupService.GetByID(ctx.Context(), startupID)
+	if err != nil {
+		logger.Errorf("Failed to get startup: %v", err)
+		return response.NotFound(ctx, "Startup not found")
+	}
+
+	return response.Success(ctx, "Startup retrieved successfully", startup)
+}
+
+func (c *StartupController) GetByUser(ctx *fiber.Ctx) error {
+	// Get user ID from context
+	userIDInterface := ctx.Locals("user_id")
+	if userIDInterface == nil {
+		return response.Unauthorized(ctx, "User not authenticated")
+	}
+
+	userID, err := uuid.Parse(userIDInterface.(string))
+	if err != nil {
+		return response.BadRequest(ctx, "Invalid user ID", err)
+	}
+
+	startup, err := c.startupService.GetByUserID(ctx.Context(), userID)
+	if err != nil {
+		logger.Errorf("Failed to get startup by user: %v", err)
+		return response.NotFound(ctx, "Startup not found")
+	}
+
+	return response.Success(ctx, "Startup retrieved successfully", startup)
+}
+
+func formatStartupInfo(s *startup.Startup) string {
+	return fmt.Sprintf(`
+Startup: %s
+Industry: %s
+Description: %s
+Funding Stage: %s
+Location: %s
+Team Size: %d
+Founded Date: %s
+`, s.Name, s.Industry, s.Description, s.FundingStage, s.Location, s.TeamSize, s.FoundedDate.Format("2006-01-02"))
+}

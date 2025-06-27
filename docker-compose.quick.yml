@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: risq_postgres
+    environment:
+      POSTGRES_DB: risq_db
+      POSTGRES_USER: risq_user
+      POSTGRES_PASSWORD: risq_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U risq_user -d risq_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-network
+
+  # Redis Cache and Vector Store
+  redis:
+    image: redis:7.2-alpine
+    container_name: risq_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-network
+
+  # NATS Message Broker for Event-Driven Architecture
+  nats:
+    image: nats:2.10-alpine
+    container_name: risq_nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"  # HTTP monitoring
+      - "6222:6222"  # Clustering
+    command: ["--jetstream", "--store_dir=/data", "--http_port=8222"]
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4222"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  nats_data:
+
+networks:
+  risq-network:
+    driver: bridge

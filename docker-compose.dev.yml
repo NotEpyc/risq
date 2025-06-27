@@ -1,0 +1,78 @@
+version: '3.8'
+
+# Development environment - services only
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: risq_postgres_dev
+    environment:
+      POSTGRES_DB: risq_db
+      POSTGRES_USER: risq_user
+      POSTGRES_PASSWORD: risq_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5433:5432"  # Changed from 5432 to 5433 to avoid conflict
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U risq_user -d risq_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-dev-network
+
+  # Redis Cache & Vector Store
+  redis:
+    image: redis:7-alpine
+    container_name: risq_redis_dev
+    ports:
+      - "6380:6379"  # Changed from 6379 to 6380 to avoid conflict
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-dev-network
+
+  # NATS Message Broker for Event-Driven Architecture
+  nats:
+    image: nats:2.10-alpine
+    container_name: risq_nats_dev
+    ports:
+      - "4222:4222"   # NATS protocol
+      - "8222:8222"   # HTTP monitoring
+      - "6222:6222"   # Clustering
+    command: [
+      "--jetstream", 
+      "--store_dir=/data", 
+      "--http_port=8222",
+      "--max_payload=10MB",
+      "--max_connections=1000"
+    ]
+    volumes:
+      - nats_dev_data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4222"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - risq-dev-network
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  nats_dev_data:
+    driver: local
+
+networks:
+  risq-dev-network:
+    driver: bridge
