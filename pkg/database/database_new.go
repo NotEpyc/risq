@@ -47,6 +47,40 @@ func New(host, port, user, password, dbname, sslmode string) (*DB, error) {
 	return db, nil
 }
 
+// NewFromURL creates a new database connection from a DATABASE_URL
+func NewFromURL(databaseURL string) (*DB, error) {
+	if databaseURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL is empty")
+	}
+
+	logger.Infof("Connecting to database using DATABASE_URL...")
+	conn, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	// Test the connection
+	if err := conn.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	// Set connection pool settings
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(5)
+	conn.SetConnMaxLifetime(5 * time.Minute)
+
+	db := &DB{conn: conn}
+
+	// Run migrations
+	migrator := migrations.NewMigrator(conn)
+	if err := migrator.RunMigrations(); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	logger.Info("Database connected and migrated successfully")
+	return db, nil
+}
+
 func (db *DB) Close() error {
 	return db.conn.Close()
 }

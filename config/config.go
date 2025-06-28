@@ -87,17 +87,17 @@ func Load() *Config {
 			Env:  getEnv("APP_ENV", "development"),
 		},
 		Database: DatabaseConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5433"),
-			User:     getEnv("DB_USER", "risq_user"),
-			Password: getEnv("DB_PASSWORD", "risq_password"),
-			Name:     getEnv("DB_NAME", "risq_db"),
-			SSLMode:  getEnv("DB_SSL_MODE", "disable"),
+			Host:     getEnvWithFallback([]string{"DB_HOST", "PGHOST"}, "localhost"),
+			Port:     getEnvWithFallback([]string{"DB_PORT", "PGPORT"}, "5432"),
+			User:     getEnvWithFallback([]string{"DB_USER", "PGUSER"}, "postgres"),
+			Password: getEnvWithFallback([]string{"DB_PASSWORD", "PGPASSWORD"}, ""),
+			Name:     getEnvWithFallback([]string{"DB_NAME", "PGDATABASE"}, "railway"),
+			SSLMode:  getEnv("DB_SSL_MODE", "require"),
 		},
 		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", "localhost"),
-			Port:     getEnv("REDIS_PORT", "6380"),
-			Password: getEnv("REDIS_PASSWORD", ""),
+			Host:     getEnvWithFallback([]string{"REDIS_HOST", "REDIS_PRIVATE_URL"}, "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnvWithFallback([]string{"REDIS_PASSWORD", "REDIS_PASSWORD"}, ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 		NATS: NATSConfig{
@@ -150,6 +150,15 @@ func getEnvAsFloat(key string, defaultValue float64) float64 {
 	valueStr := getEnv(key, "")
 	if value, err := strconv.ParseFloat(valueStr, 64); err == nil {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvWithFallback(keys []string, defaultValue string) string {
+	for _, key := range keys {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
 	}
 	return defaultValue
 }

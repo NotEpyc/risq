@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -88,6 +89,20 @@ func (a *App) initJWTService() {
 
 func (a *App) initDatabase() error {
 	logger.Info("Connecting to database...")
+	
+	// Try DATABASE_URL first (Railway's preferred method)
+	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
+		logger.Info("Using DATABASE_URL for connection")
+		db, err := database.NewFromURL(databaseURL)
+		if err != nil {
+			return err
+		}
+		a.db = db
+		logger.Info("Database connected via DATABASE_URL successfully")
+		return nil
+	}
+	
+	// Fallback to individual environment variables
 	logger.Infof("Database configuration: host=%s, port=%s, user=%s, name=%s, sslmode=%s",
 		a.config.Database.Host, a.config.Database.Port, a.config.Database.User,
 		a.config.Database.Name, a.config.Database.SSLMode)
@@ -150,9 +165,10 @@ func (a *App) setupRoutes() {
 	// Always set up health route
 	a.setupHealthRoute()
 
-	// Only set up other routes if database is available
+	// Check if database is available for full setup
 	if a.db == nil {
-		logger.Warn("Database not available - only health routes will be available")
+		logger.Warn("Database not available - setting up limited routes")
+		a.setupLimitedRoutes()
 		return
 	}
 
@@ -182,10 +198,10 @@ func (a *App) setupRoutes() {
 		RiskController:     controller.NewRiskController(riskService, startupService),
 	}
 
-	// Setup routes
+	// Setup full routes (this will override the fallback auth routes)
 	api.SetupRoutes(a.fiberApp, controllers, a.jwtService)
 
-	logger.Info("Routes set up successfully")
+	logger.Info("Full routes set up successfully")
 }
 
 func (a *App) setupHealthRoute() {
@@ -303,4 +319,79 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	logger.Info("Application shut down successfully")
 	return nil
+}
+
+func (a *App) setupAuthRoutes() {
+	logger.Info("Setting up auth routes...")
+
+	// Add API v1 group
+	v1 := a.fiberApp.Group("/api/v1")
+
+	// Public auth routes (these work even without database for better error messages)
+	public := v1.Group("/auth")
+	
+	// Simplified auth handlers that provide meaningful errors when DB is unavailable
+	public.Post("/signup", func(c *fiber.Ctx) error {
+		if a.db == nil {
+			return c.Status(503).JSON(fiber.Map{
+				"success": false,
+				"message": "Service temporarily unavailable",
+				"error":   "Database connection not available. Please try again later.",
+			})
+		}
+		// This should not happen if we reach here, but just in case
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Auth service not properly initialized",
+			"error":   "Please contact support",
+		})
+	})
+
+	public.Post("/login", func(c *fiber.Ctx) error {
+		if a.db == nil {
+			return c.Status(503).JSON(fiber.Map{
+				"success": false,
+				"message": "Service temporarily unavailable", 
+				"error":   "Database connection not available. Please try again later.",
+			})
+		}
+		// This should not happen if we reach here, but just in case
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"message": "Auth service not properly initialized",
+			"error":   "Please contact support",
+		})
+	})
+
+	logger.Info("Auth routes setup complete (fallback mode)")
+}
+
+func (a *App) setupLimitedRoutes() {
+	logger.Info("Setting up limited routes (no database)...")
+
+	// Add basic middleware
+	a.fiberApp.Use(middlewares.CORS())
+	a.fiberApp.Use(middlewares.Logger())
+
+	// Simple auth endpoints that return proper error messages
+	v1 := a.fiberApp.Group("/api/v1")
+	auth := v1.Group("/auth")
+
+	auth.Post("/signup", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"success": false,
+			"message": "Service temporarily unavailable",
+			"error":   "Database connection required for user registration",
+		})
+	})
+
+	auth.Post("/login", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"success": false,
+			"message": "Service temporarily unavailable", 
+			"error":   "Database connection required for user authentication",
+		})
+	})
+
+	logger.Info("Limited routes setup complete")
 }
