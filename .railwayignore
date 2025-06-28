@@ -1,0 +1,43 @@
+# Railway ignore file - exclude files from deployment
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+api.exe
+*.exe
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+ARCHITECTURE.md
+EVENT_DRIVEN_GUIDE.md
+EVENT_DRIVEN_SETUP.md
+SIMPLIFIED_API_TEST.md
+
+# Development scripts
+scripts/
+docker-compose.yml
+docker-compose.dev.yml
+docker-compose.quick.yml
+setup.sh
+
+# Test files
+*_test.go
+test_*.go
+
+# Backup files
+*.backup
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
