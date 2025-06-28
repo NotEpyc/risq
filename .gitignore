@@ -52,8 +52,6 @@ temp/
 *.sqlite3
 
 # Cache directories
-cache/
-.cache/
 
 # Build artifacts
 dist/

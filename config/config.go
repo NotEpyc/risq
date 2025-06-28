@@ -78,7 +78,7 @@ func Load() *Config {
 	if port == "" {
 		port = getEnv("APP_PORT", "8080")
 	}
-	
+
 	return &Config{
 		App: AppConfig{
 			Name: getEnv("APP_NAME", "Smart Risk Assessment API"),
