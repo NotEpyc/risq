@@ -71,11 +71,14 @@ func NewFromURL(databaseURL string) (*DB, error) {
 
 	db := &DB{conn: conn}
 
-	// Run migrations
+	// Run migrations with better logging
+	logger.Info("Starting database migrations from DATABASE_URL connection...")
 	migrator := migrations.NewMigrator(conn)
 	if err := migrator.RunMigrations(); err != nil {
+		logger.Errorf("Migration failed: %v", err)
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
+	logger.Info("Database migrations completed successfully from DATABASE_URL")
 
 	logger.Info("Database connected and migrated successfully")
 	return db, nil

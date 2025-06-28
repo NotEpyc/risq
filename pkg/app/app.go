@@ -93,8 +93,17 @@ func (a *App) initDatabase() error {
 	// Try DATABASE_URL first (Railway's preferred method)
 	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
 		logger.Info("Using DATABASE_URL for connection")
+		// Log partial URL for debugging (hide sensitive parts)
+		urlLen := len(databaseURL)
+		if urlLen > 20 {
+			logger.Infof("DATABASE_URL starts with: %s...", databaseURL[:20])
+		} else {
+			logger.Info("DATABASE_URL provided")
+		}
+		
 		db, err := database.NewFromURL(databaseURL)
 		if err != nil {
+			logger.Errorf("Failed to connect using DATABASE_URL: %v", err)
 			return err
 		}
 		a.db = db
@@ -116,6 +125,7 @@ func (a *App) initDatabase() error {
 		a.config.Database.SSLMode,
 	)
 	if err != nil {
+		logger.Errorf("Failed to connect using individual config: %v", err)
 		return err
 	}
 
@@ -127,7 +137,24 @@ func (a *App) initDatabase() error {
 func (a *App) initRedis() error {
 	logger.Info("Connecting to Redis...")
 
-	redisURL := fmt.Sprintf("redis://%s:%s", a.config.Redis.Host, a.config.Redis.Port)
+	var redisURL string
+
+	// Try REDIS_URL first (Railway's preferred method)
+	if url := os.Getenv("REDIS_URL"); url != "" {
+		redisURL = url
+		logger.Info("Using REDIS_URL for connection")
+	} else if privateURL := os.Getenv("REDIS_PRIVATE_URL"); privateURL != "" {
+		redisURL = privateURL
+		logger.Info("Using REDIS_PRIVATE_URL for connection")
+	} else {
+		// Fallback to individual environment variables
+		redisURL = fmt.Sprintf("redis://%s:%s", a.config.Redis.Host, a.config.Redis.Port)
+		if a.config.Redis.Password != "" {
+			redisURL = fmt.Sprintf("redis://:%s@%s:%s", a.config.Redis.Password, a.config.Redis.Host, a.config.Redis.Port)
+		}
+		logger.Info("Using individual Redis config for connection")
+	}
+
 	redis, err := cache.NewRedisConnection(redisURL)
 	if err != nil {
 		return err

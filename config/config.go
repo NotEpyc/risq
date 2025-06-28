@@ -95,9 +95,9 @@ func Load() *Config {
 			SSLMode:  getEnv("DB_SSL_MODE", "require"),
 		},
 		Redis: RedisConfig{
-			Host:     getEnvWithFallback([]string{"REDIS_HOST", "REDIS_PRIVATE_URL"}, "localhost"),
+			Host:     getEnvWithFallback([]string{"REDIS_HOST", "REDIS_PRIVATE_URL", "REDIS_URL"}, "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),
-			Password: getEnvWithFallback([]string{"REDIS_PASSWORD", "REDIS_PASSWORD"}, ""),
+			Password: getEnvWithFallback([]string{"REDIS_PASSWORD"}, ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 		NATS: NATSConfig{
