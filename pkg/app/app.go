@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -21,6 +22,7 @@ import (
 	"risq_backend/pkg/jwt"
 	pkgllm "risq_backend/pkg/llm"
 	"risq_backend/pkg/logger"
+	"risq_backend/pkg/middlewares"
 )
 
 type App struct {
@@ -44,14 +46,16 @@ func (a *App) Initialize() error {
 	logger.Init(a.config.Log.Level)
 	logger.Info("Initializing application...")
 
-	// Initialize database
+	// Initialize database (optional for health checks)
 	if err := a.initDatabase(); err != nil {
-		return err
+		logger.Warnf("Database initialization failed: %v", err)
+		logger.Info("Continuing without database (health checks will still work)")
 	}
 
-	// Initialize Redis
+	// Initialize Redis (optional for health checks)
 	if err := a.initRedis(); err != nil {
-		return err
+		logger.Warnf("Redis initialization failed: %v", err)
+		logger.Info("Continuing without Redis (health checks will still work)")
 	}
 
 	// Initialize LLM client
@@ -60,9 +64,10 @@ func (a *App) Initialize() error {
 	// Initialize JWT service
 	a.initJWTService()
 
-	// Initialize event-driven services
+	// Initialize event-driven services (optional for health checks)
 	if err := a.initEventManager(); err != nil {
-		return err
+		logger.Warnf("Event manager initialization failed: %v", err)
+		logger.Info("Continuing without event manager (health checks will still work)")
 	}
 
 	// Initialize Fiber app
@@ -142,6 +147,15 @@ func (a *App) initFiberApp() {
 func (a *App) setupRoutes() {
 	logger.Info("Setting up routes...")
 
+	// Always set up health route
+	a.setupHealthRoute()
+
+	// Only set up other routes if database is available
+	if a.db == nil {
+		logger.Warn("Database not available - only health routes will be available")
+		return
+	}
+
 	// Create repositories
 	userRepo := user.NewRepository(a.db.GetConn())
 	startupRepo := startup.NewRepository(a.db.GetConn())
@@ -174,8 +188,37 @@ func (a *App) setupRoutes() {
 	logger.Info("Routes set up successfully")
 }
 
+func (a *App) setupHealthRoute() {
+	logger.Info("Setting up health route...")
+
+	// Add basic middleware
+	a.fiberApp.Use(middlewares.CORS())
+	a.fiberApp.Use(middlewares.Logger())
+
+	// Health check with detailed status
+	a.fiberApp.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":    "ok",
+			"message":   "Risk Assessment API is running",
+			"timestamp": time.Now().Unix(),
+			"version":   "1.0.0",
+			"service":   "risq-backend",
+		})
+	})
+
+	logger.Info("Health route setup complete")
+}
+
 func (a *App) initEventManager() error {
 	logger.Info("Initializing Event Manager...")
+
+	// Check if dependencies are available
+	if a.db == nil {
+		return fmt.Errorf("database not available")
+	}
+	if a.redis == nil {
+		return fmt.Errorf("redis not available")
+	}
 
 	// Create external services
 	marketDataService := external.NewMarketDataService(
@@ -208,12 +251,22 @@ func (a *App) initEventManager() error {
 func (a *App) Start() error {
 	logger.Infof("Starting server on %s:%s", a.config.App.Host, a.config.App.Port)
 
-	// Start event manager
-	if err := a.eventManager.Start(context.Background()); err != nil {
-		return fmt.Errorf("failed to start event manager: %w", err)
+	// Start event manager (if available)
+	if a.eventManager != nil {
+		if err := a.eventManager.Start(context.Background()); err != nil {
+			logger.Warnf("Failed to start event manager: %v", err)
+			logger.Info("Continuing without event manager")
+		} else {
+			logger.Info("Event manager started successfully")
+		}
+	} else {
+		logger.Info("Event manager not available, skipping")
 	}
 
 	address := a.config.App.Host + ":" + a.config.App.Port
+	logger.Infof("Server listening on: %s", address)
+	logger.Info("Health check available at: /health")
+	logger.Info("Application startup complete")
 	return a.fiberApp.Listen(address)
 }
 

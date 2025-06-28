@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"risq_backend/api/controller"
 	"risq_backend/pkg/jwt"
 	"risq_backend/pkg/middlewares"
@@ -13,11 +15,14 @@ func SetupRoutes(app *fiber.App, controllers *Controllers, jwtService *jwt.Servi
 	app.Use(middlewares.CORS())
 	app.Use(middlewares.Logger())
 
-	// Health check
+	// Health check with detailed status
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status":  "ok",
-			"message": "Risk Assessment API is running",
+			"status":    "ok",
+			"message":   "Risk Assessment API is running",
+			"timestamp": time.Now().Unix(),
+			"version":   "1.0.0",
+			"service":   "risq-backend",
 		})
 	})
 
