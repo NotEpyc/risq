@@ -33,8 +33,8 @@ COPY --from=builder /app/main .
 # Copy environment file if it exists
 COPY --from=builder /app/.env* ./
 
-# Expose port
-EXPOSE 8080
+# Railway provides PORT environment variable
+# No need to hardcode EXPOSE since Railway handles this
 
 # Command to run
 CMD ["./main"]

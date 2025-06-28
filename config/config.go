@@ -73,11 +73,17 @@ type ExternalConfig struct {
 }
 
 func Load() *Config {
+	// For Railway compatibility, check PORT first, then APP_PORT, then default
+	port := getEnv("PORT", "")
+	if port == "" {
+		port = getEnv("APP_PORT", "8080")
+	}
+	
 	return &Config{
 		App: AppConfig{
 			Name: getEnv("APP_NAME", "Smart Risk Assessment API"),
-			Port: getEnv("APP_PORT", "8080"),
-			Host: getEnv("APP_HOST", "localhost"),
+			Port: port,
+			Host: getEnv("APP_HOST", "0.0.0.0"), // Changed to 0.0.0.0 for Railway
 			Env:  getEnv("APP_ENV", "development"),
 		},
 		Database: DatabaseConfig{
