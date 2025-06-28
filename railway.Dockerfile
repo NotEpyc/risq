@@ -1,6 +1,6 @@
 # Railway Deployment Dockerfile
 # Build stage - Use Go 1.23 to match go.mod requirements
-FROM golang:1.23-alpine AS builder
+FROM golang:1.23.3-alpine AS builder
 
 # Install required packages
 RUN apk add --no-cache git ca-certificates tzdata
