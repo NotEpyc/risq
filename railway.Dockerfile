@@ -1,5 +1,5 @@
 # Railway Deployment Dockerfile
-# Build stage
+# Build stage - Use Go 1.23 to match go.mod requirements
 FROM golang:1.23-alpine AS builder
 
 # Install required packages

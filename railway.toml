@@ -1,0 +1,35 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "./main"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environment]
+# Railway will automatically inject these from your environment variables
+PORT = "$PORT"
+APP_HOST = "0.0.0.0"
+APP_PORT = "$PORT"
+
+# Database - Railway PostgreSQL plugin will provide these
+DB_HOST = "$PGHOST"
+DB_PORT = "$PGPORT"
+DB_USER = "$PGUSER"
+DB_PASSWORD = "$PGPASSWORD"
+DB_NAME = "$PGDATABASE"
+DB_SSL_MODE = "require"
+
+# Redis - Railway Redis plugin will provide these
+REDIS_HOST = "$REDISHOST"
+REDIS_PORT = "$REDISPORT"
+REDIS_PASSWORD = "$REDISPASSWORD"
+
+# You'll need to set these manually in Railway
+# OPENAI_API_KEY = ""
+# MARKET_DATA_API_KEY = ""
+# NEWS_API_KEY = ""
+# JWT_SECRET = ""
