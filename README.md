@@ -1,21 +1,42 @@
-# 🧠 Smart Risk Assessment App for First-Time Entrepreneurs
+# 🎯 RISQ Backend - AI-Powered Startup Risk Assessment API
 
-A clean, streamlined Go backend that helps first-time startup founders assess the risk of their ideas and decisions using AI-powered analysis.
+[![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)](https://golang.org)
+[![Railway Deploy](https://img.shields.io/badge/Deploy-Railway-blueviolet.svg)](https://railway.app)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![API Version](https://img.shields.io/badge/API-v1.0.0-orange.svg)](https://resqbackend-production.up.railway.app/health)
 
-## 🚀 Features
+> **An intelligent, event-driven platform that leverages AI to provide comprehensive risk assessment and decision-making support for startups.**
 
-- **User Authentication** - Secure signup and login with JWT tokens
-- **Startup Onboarding** - Complete startup profile submission
-- **AI-Powered Risk Analysis** - Risk assessment using OpenAI GPT models
-- **Decision Speculation Engine** - Test decisions before committing with risk projections
-- **Risk Evolution Tracking** - Timeline of risk changes and decision impacts
+## 🌟 **Overview**
 
-## 🏗️ Architecture
+RISQ Backend is a sophisticated microservice that combines machine learning, real-time market data, and context-aware AI to deliver actionable insights for startup risk assessment. Built with enterprise-grade architecture, it features event-driven workflows, vector embeddings for context memory, and seamless integration with external data sources.
 
-- **Clean Architecture** - Controller → Service → Repository pattern
-- **Domain-Driven Structure** - Modular design with clear bounded contexts
-- **Simple and Focused** - Essential features only, ready for development
-- **Microservices Ready** - Modular monolith that can be split
+## 🚀 **Key Features**
+
+### **🤖 AI-Powered Intelligence**
+- **GPT-4 Integration**: Advanced natural language processing for decision reasoning
+- **Vector Embeddings**: Semantic context storage and retrieval using OpenAI embeddings  
+- **Context Memory**: RAG (Retrieval-Augmented Generation) system for learning from startup history
+
+### **📊 Risk Assessment Engine**
+- **Multi-dimensional Analysis**: Market, Technical, Financial, Regulatory, and Operational risk scoring
+- **Real-time Scoring**: Dynamic risk calculation (0-100 scale) with confidence intervals
+- **Historical Tracking**: Risk evolution monitoring and trend analysis
+
+### **🎯 Decision Support System**
+- **AI Speculation**: Intelligent decision recommendations with reasoning
+- **Confidence Scoring**: Quantified certainty levels for all suggestions
+- **Decision History**: Complete audit trail of all decisions and outcomes
+
+### **� Real-time Market Intelligence**
+- **News Sentiment Analysis**: Automated market trend detection via NewsAPI
+- **Industry Data**: Real-time financial market data integration via MarketStack
+- **Sector-specific Insights**: Tailored analysis based on startup industry
+
+### **⚡ Event-Driven Architecture**
+- **Asynchronous Processing**: Non-blocking workflows for heavy AI computations
+- **NATS Messaging**: Reliable event streaming and service communication
+- **Workflow Orchestration**: Automated startup analysis pipeline
 
 ## 📦 Tech Stack
 

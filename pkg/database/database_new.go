@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"risq_backend/pkg/logger"
@@ -53,16 +54,29 @@ func NewFromURL(databaseURL string) (*DB, error) {
 		return nil, fmt.Errorf("DATABASE_URL is empty")
 	}
 
-	logger.Infof("Connecting to database using DATABASE_URL...")
+	logger.Info("Connecting to database using DATABASE_URL...")
+	
+	// Safe URL format logging
+	if strings.Contains(databaseURL, "@") && strings.Contains(databaseURL, "://") {
+		parts := strings.Split(databaseURL, "@")
+		if len(parts) > 1 {
+			logger.Infof("Connecting to host: %s", parts[len(parts)-1])
+		}
+	}
+
 	conn, err := sql.Open("postgres", databaseURL)
 	if err != nil {
+		logger.Errorf("Failed to open database connection: %v", err)
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
-	// Test the connection
+	// Test the connection with timeout
+	logger.Info("Testing database connection...")
 	if err := conn.Ping(); err != nil {
+		logger.Errorf("Database ping failed: %v", err)
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
+	logger.Info("✅ Database ping successful")
 
 	// Set connection pool settings
 	conn.SetMaxOpenConns(25)

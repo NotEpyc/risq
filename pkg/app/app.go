@@ -88,33 +88,42 @@ func (a *App) initJWTService() {
 }
 
 func (a *App) initDatabase() error {
-	logger.Info("Connecting to database...")
-	
+	logger.Info("Initializing database connection...")
+
 	// Try DATABASE_URL first (Railway's preferred method)
 	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
-		logger.Info("Using DATABASE_URL for connection")
+		logger.Info("DATABASE_URL found - attempting connection...")
 		// Log partial URL for debugging (hide sensitive parts)
 		urlLen := len(databaseURL)
 		if urlLen > 20 {
-			logger.Infof("DATABASE_URL starts with: %s...", databaseURL[:20])
-		} else {
-			logger.Info("DATABASE_URL provided")
+			logger.Infof("DATABASE_URL format: %s...%s", databaseURL[:8], databaseURL[urlLen-10:])
 		}
-		
+
 		db, err := database.NewFromURL(databaseURL)
 		if err != nil {
-			logger.Errorf("Failed to connect using DATABASE_URL: %v", err)
-			return err
+			logger.Errorf("DATABASE_URL connection failed: %v", err)
+			// Don't return error - fall back to individual variables
+			logger.Warn("Falling back to individual database environment variables...")
+		} else {
+			a.db = db
+			logger.Info("✅ Database connected successfully via DATABASE_URL")
+			return nil
 		}
-		a.db = db
-		logger.Info("Database connected via DATABASE_URL successfully")
-		return nil
+	} else {
+		logger.Warn("DATABASE_URL not found, using individual environment variables")
 	}
-	
+
 	// Fallback to individual environment variables
-	logger.Infof("Database configuration: host=%s, port=%s, user=%s, name=%s, sslmode=%s",
+	logger.Info("Attempting connection with individual database configuration...")
+	logger.Infof("DB Config: host=%s, port=%s, user=%s, dbname=%s, sslmode=%s",
 		a.config.Database.Host, a.config.Database.Port, a.config.Database.User,
 		a.config.Database.Name, a.config.Database.SSLMode)
+
+	// Check if required fields are available
+	if a.config.Database.Host == "" || a.config.Database.Host == "localhost" {
+		logger.Error("Database host not configured properly")
+		return fmt.Errorf("database host not configured - check DB_HOST or DATABASE_URL")
+	}
 
 	db, err := database.New(
 		a.config.Database.Host,
@@ -125,12 +134,12 @@ func (a *App) initDatabase() error {
 		a.config.Database.SSLMode,
 	)
 	if err != nil {
-		logger.Errorf("Failed to connect using individual config: %v", err)
-		return err
+		logger.Errorf("Individual DB config connection failed: %v", err)
+		return fmt.Errorf("database connection failed with both methods: %w", err)
 	}
 
 	a.db = db
-	logger.Info("Database connected and migrated successfully")
+	logger.Info("✅ Database connected successfully via individual config")
 	return nil
 }
 
@@ -356,7 +365,7 @@ func (a *App) setupAuthRoutes() {
 
 	// Public auth routes (these work even without database for better error messages)
 	public := v1.Group("/auth")
-	
+
 	// Simplified auth handlers that provide meaningful errors when DB is unavailable
 	public.Post("/signup", func(c *fiber.Ctx) error {
 		if a.db == nil {
@@ -378,7 +387,7 @@ func (a *App) setupAuthRoutes() {
 		if a.db == nil {
 			return c.Status(503).JSON(fiber.Map{
 				"success": false,
-				"message": "Service temporarily unavailable", 
+				"message": "Service temporarily unavailable",
 				"error":   "Database connection not available. Please try again later.",
 			})
 		}
@@ -415,7 +424,7 @@ func (a *App) setupLimitedRoutes() {
 	auth.Post("/login", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
 			"success": false,
-			"message": "Service temporarily unavailable", 
+			"message": "Service temporarily unavailable",
 			"error":   "Database connection required for user authentication",
 		})
 	})
