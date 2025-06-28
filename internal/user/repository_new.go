@@ -28,7 +28,7 @@ func NewRepository(db *sql.DB) Repository {
 
 func (r *repository) Create(ctx context.Context, user *User) error {
 	query := `
-		INSERT INTO users (id, email, name, password, role, startup_id, created_at, updated_at)
+		INSERT INTO users (id, email, name, password_hash, role, startup_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
@@ -53,7 +53,7 @@ func (r *repository) Create(ctx context.Context, user *User) error {
 
 func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	query := `
-		SELECT id, email, name, password, role, startup_id, created_at, updated_at
+		SELECT id, email, name, password_hash, role, startup_id, created_at, updated_at
 		FROM users WHERE id = $1
 	`
 
@@ -74,7 +74,7 @@ func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 
 func (r *repository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, email, name, password, role, startup_id, created_at, updated_at
+		SELECT id, email, name, password_hash, role, startup_id, created_at, updated_at
 		FROM users WHERE email = $1
 	`
 
@@ -96,7 +96,7 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (*User, error
 func (r *repository) Update(ctx context.Context, user *User) error {
 	query := `
 		UPDATE users 
-		SET name = $2, password = $3, role = $4, startup_id = $5, updated_at = $6
+		SET name = $2, password_hash = $3, role = $4, startup_id = $5, updated_at = $6
 		WHERE id = $1
 	`
 
