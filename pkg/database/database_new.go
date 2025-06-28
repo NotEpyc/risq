@@ -55,7 +55,7 @@ func NewFromURL(databaseURL string) (*DB, error) {
 	}
 
 	logger.Info("Connecting to database using DATABASE_URL...")
-	
+
 	// Safe URL format logging
 	if strings.Contains(databaseURL, "@") && strings.Contains(databaseURL, "://") {
 		parts := strings.Split(databaseURL, "@")

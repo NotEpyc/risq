@@ -1,0 +1,195 @@
+{
+  "startup_onboarding_complete": {
+    "method": "POST",
+    "url": "{{base_url}}/api/startups/onboard",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "name": "TechFlow Solutions",
+      "description": "An AI-powered workflow automation platform that helps small businesses streamline their operations and reduce manual tasks by up to 70%.",
+      "industry": "Technology",
+      "sector": "workflow automation",
+      "funding_stage": "seed",
+      "location": "San Francisco, CA",
+      "founded_date": "2024-01-15",
+      "team_size": 8,
+      "website": "https://techflowsolutions.com",
+      "business_model": "SaaS subscription with tiered pricing based on automation complexity and team size",
+      "revenue_streams": [
+        "Monthly SaaS subscriptions",
+        "Premium enterprise features",
+        "Professional services and consulting",
+        "Third-party integrations marketplace"
+      ],
+      "target_market": "Small to medium businesses (10-500 employees) across various industries looking to automate repetitive workflows",
+      "competitor_analysis": "Competing with Zapier and Microsoft Power Automate, but focusing on SMB market with simpler setup and industry-specific templates",
+      "implementation_plan": "Phase 1: Core automation engine (3 months), Phase 2: User interface and integrations (2 months), Phase 3: Advanced AI features and marketplace (4 months)",
+      "technology_stack": [
+        "React.js",
+        "Node.js",
+        "PostgreSQL",
+        "Docker",
+        "AWS",
+        "Python",
+        "TensorFlow"
+      ],
+      "development_timeline": "9-month development cycle with MVP ready in 5 months and full platform in 9 months",
+      "go_to_market_strategy": "Content marketing, partnership with business consultants, freemium model for user acquisition, and targeted LinkedIn advertising",
+      "initial_investment": 250000,
+      "monthly_burn_rate": 45000,
+      "projected_revenue": 120000,
+      "funding_requirement": 1500000,
+      "founder_details": [
+        {
+          "name": "Sarah Chen",
+          "email": "sarah@techflowsolutions.com",
+          "role": "CEO & Co-Founder",
+          "linkedin_url": "https://linkedin.com/in/sarahchen",
+          "education": [
+            "Stanford University - MS Computer Science (2019)",
+            "UC Berkeley - BS Business Administration (2017)"
+          ],
+          "experience": [
+            {
+              "company": "Google",
+              "position": "Product Manager",
+              "start_date": "2019-06-01",
+              "end_date": "2023-12-31",
+              "description": "Led product development for Google Workspace automation features, managing a team of 12 engineers and designers",
+              "industry": "Technology"
+            },
+            {
+              "company": "McKinsey & Company",
+              "position": "Business Analyst",
+              "start_date": "2017-07-01",
+              "end_date": "2019-05-31",
+              "description": "Consulted Fortune 500 companies on digital transformation and process optimization",
+              "industry": "Consulting"
+            }
+          ],
+          "skills": [
+            "Product Management",
+            "Business Strategy",
+            "Team Leadership",
+            "Data Analysis",
+            "UI/UX Design"
+          ],
+          "achievements": [
+            "Led Google Workspace feature that increased user engagement by 35%",
+            "Published research on workflow automation in Harvard Business Review",
+            "Speaker at TechCrunch Disrupt 2023"
+          ],
+          "previous_startups": [
+            "Co-founded DataViz Pro (acquired by Salesforce in 2021)"
+          ]
+        },
+        {
+          "name": "Michael Rodriguez",
+          "email": "michael@techflowsolutions.com",
+          "role": "CTO & Co-Founder",
+          "linkedin_url": "https://linkedin.com/in/michaelrodriguez",
+          "education": [
+            "MIT - MS Artificial Intelligence (2018)",
+            "Carnegie Mellon - BS Computer Science (2016)"
+          ],
+          "experience": [
+            {
+              "company": "Tesla",
+              "position": "Senior Software Engineer",
+              "start_date": "2018-08-01",
+              "end_date": "2023-11-30",
+              "description": "Developed autonomous driving algorithms and led the infrastructure team for over-the-air updates",
+              "industry": "Automotive/Technology"
+            },
+            {
+              "company": "Facebook (Meta)",
+              "position": "Software Engineer",
+              "start_date": "2016-06-01",
+              "end_date": "2018-07-31",
+              "description": "Built scalable backend systems for Facebook's messaging platform",
+              "industry": "Technology"
+            }
+          ],
+          "skills": [
+            "Machine Learning",
+            "System Architecture",
+            "Python",
+            "React",
+            "DevOps",
+            "Team Leadership"
+          ],
+          "achievements": [
+            "Patent holder for 3 AI-related technologies",
+            "Led development of Tesla's fastest OTA update system",
+            "Open source contributor with 10k+ GitHub stars"
+          ],
+          "previous_startups": [
+            "Founded CodeStream (sold to GitLab in 2020)"
+          ]
+        }
+      ]
+    }
+  },
+  "user_registration": {
+    "method": "POST",
+    "url": "{{base_url}}/api/users/register",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": "testuser@example.com",
+      "password": "SecurePassword123!"
+    }
+  },
+  "user_login": {
+    "method": "POST",
+    "url": "{{base_url}}/api/users/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": "testuser@example.com",
+      "password": "SecurePassword123!"
+    }
+  },
+  "health_check": {
+    "method": "GET",
+    "url": "{{base_url}}/health",
+    "headers": {}
+  },
+  "risk_assessment": {
+    "method": "POST",
+    "url": "{{base_url}}/api/risk/assess",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{jwt_token}}"
+    },
+    "body": {
+      "startup_id": "startup-uuid-here",
+      "assessment_type": "comprehensive",
+      "context": {
+        "market_conditions": "favorable",
+        "competitive_landscape": "moderate",
+        "regulatory_environment": "stable"
+      }
+    }
+  },
+  "decision_support": {
+    "method": "POST",
+    "url": "{{base_url}}/api/decisions/support",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{jwt_token}}"
+    },
+    "body": {
+      "decision_type": "funding",
+      "context": "Should we proceed with Series A funding?",
+      "parameters": {
+        "current_valuation": 5000000,
+        "funding_amount": 2000000,
+        "runway_months": 18
+      }
+    }
+  }
+}

@@ -87,11 +87,11 @@ func Load() *Config {
 			Env:  getEnv("APP_ENV", "development"),
 		},
 		Database: DatabaseConfig{
-			Host:     getEnvWithFallback([]string{"DB_HOST", "PGHOST"}, "localhost"),
-			Port:     getEnvWithFallback([]string{"DB_PORT", "PGPORT"}, "5432"),
-			User:     getEnvWithFallback([]string{"DB_USER", "PGUSER"}, "postgres"),
-			Password: getEnvWithFallback([]string{"DB_PASSWORD", "PGPASSWORD"}, ""),
-			Name:     getEnvWithFallback([]string{"DB_NAME", "PGDATABASE"}, "railway"),
+			Host:     getEnvWithFallback([]string{"DB_HOST", "PGHOST", "DATABASE_PRIVATE_HOST"}, "localhost"),
+			Port:     getEnvWithFallback([]string{"DB_PORT", "PGPORT", "DATABASE_PORT"}, "5432"),
+			User:     getEnvWithFallback([]string{"DB_USER", "PGUSER", "DATABASE_USERNAME"}, "postgres"),
+			Password: getEnvWithFallback([]string{"DB_PASSWORD", "PGPASSWORD", "DATABASE_PASSWORD"}, ""),
+			Name:     getEnvWithFallback([]string{"DB_NAME", "PGDATABASE", "DATABASE_NAME"}, "railway"),
 			SSLMode:  getEnv("DB_SSL_MODE", "require"),
 		},
 		Redis: RedisConfig{

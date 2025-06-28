@@ -47,6 +47,9 @@ func (a *App) Initialize() error {
 	logger.Init(a.config.Log.Level)
 	logger.Info("Initializing application...")
 
+	// Debug environment variables
+	a.debugEnvironment()
+
 	// Initialize database (optional for health checks)
 	if err := a.initDatabase(); err != nil {
 		logger.Warnf("Database initialization failed: %v", err)
@@ -430,4 +433,35 @@ func (a *App) setupLimitedRoutes() {
 	})
 
 	logger.Info("Limited routes setup complete")
+}
+
+func (a *App) debugEnvironment() {
+	logger.Info("=== Environment Debug ===")
+
+	// Database variables
+	logger.Infof("DATABASE_URL: %s", maskEnvVar(os.Getenv("DATABASE_URL")))
+	logger.Infof("PGHOST: %s", os.Getenv("PGHOST"))
+	logger.Infof("PGPORT: %s", os.Getenv("PGPORT"))
+	logger.Infof("PGUSER: %s", os.Getenv("PGUSER"))
+	logger.Infof("PGDATABASE: %s", os.Getenv("PGDATABASE"))
+
+	// Redis variables
+	logger.Infof("REDIS_URL: %s", maskEnvVar(os.Getenv("REDIS_URL")))
+	logger.Infof("REDIS_PRIVATE_URL: %s", maskEnvVar(os.Getenv("REDIS_PRIVATE_URL")))
+
+	// App variables
+	logger.Infof("APP_ENV: %s", os.Getenv("APP_ENV"))
+	logger.Infof("PORT: %s", os.Getenv("PORT"))
+
+	logger.Info("=== End Environment Debug ===")
+}
+
+func maskEnvVar(value string) string {
+	if value == "" {
+		return "[NOT SET]"
+	}
+	if len(value) <= 10 {
+		return "[SET]"
+	}
+	return value[:8] + "..." + value[len(value)-4:]
 }
