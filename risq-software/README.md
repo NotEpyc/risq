@@ -404,8 +404,4 @@ docs(readme): update installation instructions
 
 This project is private and proprietary. All rights reserved.
 
----
 
-**Built with ❤️ using Flutter**
-
-For more information about Flutter development, visit the [official documentation](https://docs.flutter.dev/).
