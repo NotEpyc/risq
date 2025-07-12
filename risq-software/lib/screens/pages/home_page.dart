@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:risq/theme/theme.dart';
 import 'package:risq/utils/responsive_utils.dart';
-import 'package:risq/screens/pages/startup_profile_page.dart';
-import 'package:risq/screens/pages/notifications_page.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
+import 'package:risq/screens/pages/profile_page.dart';
+import 'package:risq/screens/pages/notifications_page.dart';
 
 class HomePage extends StatefulWidget {
   final String userName;
   final String userEmail;
+  final Function(int)? onNavigateToTab;
 
   const HomePage({
     super.key,
     required this.userName,
     required this.userEmail,
+    this.onNavigateToTab,
   });
 
   @override
@@ -29,7 +31,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             // Top Header with Profile and Notifications
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
               ),
@@ -41,16 +43,19 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const StartupProfilePage(),
+                          builder: (context) => ProfilePage(
+                            userName: widget.userName,
+                            userEmail: widget.userEmail,
+                          ),
                         ),
                       );
                     },
                     child: Container(
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: AppTheme.authAccentColor,
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Center(
@@ -60,7 +65,7 @@ class _HomePageState extends State<HomePage> {
                               : 'U',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: ResponsiveUtils.getBodySize(context) + 2,
+                            fontSize: ResponsiveUtils.getBodySize(context),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -76,16 +81,16 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const NotificationsPage(),
+                          builder: (context) => NotificationsListPage(),
                         ),
                       );
                     },
                     child: Container(
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Stack(
                         children: [
@@ -93,19 +98,19 @@ class _HomePageState extends State<HomePage> {
                             child: Icon(
                               Icons.notifications_outlined,
                               color: Colors.grey[700],
-                              size: 24,
+                              size: 20,
                             ),
                           ),
                           // Notification badge
                           Positioned(
-                            right: 12,
-                            top: 12,
+                            right: 10,
+                            top: 10,
                             child: Container(
-                              width: 8,
-                              height: 8,
+                              width: 6,
+                              height: 6,
                               decoration: BoxDecoration(
                                 color: Colors.red,
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(3),
                               ),
                             ),
                           ),
@@ -153,7 +158,7 @@ class _HomePageState extends State<HomePage> {
       width: double.infinity,
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.authPrimaryColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -168,7 +173,7 @@ class _HomePageState extends State<HomePage> {
           Text(
             'Risk Score',
             style: TextStyle(
-              color: Colors.grey[700],
+              color: Colors.white,
               fontSize: ResponsiveUtils.getBodySize(context) + 2,
               fontWeight: FontWeight.w600,
             ),
@@ -181,37 +186,25 @@ class _HomePageState extends State<HomePage> {
                 RadialAxis(
                   minimum: 0,
                   maximum: 10,
-                  showLabels: true,
-                  showTicks: true,
+                  showLabels: false,
+                  showTicks: false,
                   radiusFactor: 0.9,
                   axisLineStyle: AxisLineStyle(
                     thickness: 0.15,
                     cornerStyle: CornerStyle.bothCurve,
-                    color: Colors.grey[300],
+                    color: Colors.white.withOpacity(0.4),
                     thicknessUnit: GaugeSizeUnit.factor,
                   ),
-                  majorTickStyle: MajorTickStyle(
-                    length: 12,
-                    thickness: 2,
-                    color: Colors.grey[400],
-                  ),
-                  minorTickStyle: MinorTickStyle(
-                    length: 6,
-                    thickness: 1,
-                    color: Colors.grey[300],
-                  ),
-                  axisLabelStyle: GaugeTextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  ranges: <GaugeRange>[
-                    GaugeRange(
-                      startValue: 0,
-                      endValue: 7.2, // Only fill up to the current risk score
-                      color: AppTheme.authAccentColor,
-                      startWidth: 12,
-                      endWidth: 12,
+                  pointers: <GaugePointer>[
+                    RangePointer(
+                      value: 7.2,
+                      width: 14,
+                      color: Colors.white,
+                      cornerStyle: CornerStyle.bothCurve,
+                      gradient: SweepGradient(
+                        colors: [Colors.white, Colors.white],
+                        stops: [0.0, 1.0],
+                      ),
                     ),
                   ],
                   annotations: <GaugeAnnotation>[
@@ -224,7 +217,7 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.authAccentColor,
+                              color: Colors.white,
                             ),
                           ),
                           Text(
@@ -232,7 +225,7 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey[600],
+                              color: Colors.white.withOpacity(0.8),
                             ),
                           ),
                         ],
@@ -249,13 +242,13 @@ class _HomePageState extends State<HomePage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.authAccentColor.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '85% Confidence Level',
               style: TextStyle(
-                color: AppTheme.authAccentColor,
+                color: Colors.white,
                 fontSize: ResponsiveUtils.getSmallTextSize(context),
                 fontWeight: FontWeight.w600,
               ),
@@ -288,10 +281,14 @@ class _HomePageState extends State<HomePage> {
                 subtitle: 'Test a decision',
                 color: Colors.blue,
                 onTap: () {
-                  // TODO: Navigate to speculation page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Use the Speculation tab below!')),
-                  );
+                  // Navigate to speculation tab
+                  if (widget.onNavigateToTab != null) {
+                    widget.onNavigateToTab!(1);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Use the Speculation tab below!')),
+                    );
+                  }
                 },
               ),
             ),
@@ -303,10 +300,7 @@ class _HomePageState extends State<HomePage> {
                 subtitle: 'Detailed analysis',
                 color: Colors.green,
                 onTap: () {
-                  // TODO: Navigate to reports
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Reports coming soon!')),
-                  );
+                  _showDummyReport(context);
                 },
               ),
             ),
@@ -326,46 +320,52 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(20),
+        height: 110,
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.authPrimaryColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: Offset(0, 10),
             ),
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(25),
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: Colors.white, size: 16),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 5),
             Text(
               title,
               style: TextStyle(
-                fontSize: ResponsiveUtils.getBodySize(context),
+                fontSize: ResponsiveUtils.getBodySize(context) - 3,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.white,
               ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: 4),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: ResponsiveUtils.getSmallTextSize(context),
-                color: Colors.grey[600],
+                fontSize: ResponsiveUtils.getSmallTextSize(context) - 3,
+                color: Colors.white.withOpacity(0.8),
               ),
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -415,13 +415,13 @@ class _HomePageState extends State<HomePage> {
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.authPrimaryColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -431,10 +431,10 @@ class _HomePageState extends State<HomePage> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           SizedBox(width: 16),
           Expanded(
@@ -446,7 +446,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontSize: ResponsiveUtils.getBodySize(context),
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: Colors.white,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -454,7 +454,7 @@ class _HomePageState extends State<HomePage> {
                   subtitle,
                   style: TextStyle(
                     fontSize: ResponsiveUtils.getSmallTextSize(context),
-                    color: Colors.grey[600],
+                    color: Colors.white.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -464,7 +464,7 @@ class _HomePageState extends State<HomePage> {
             time,
             style: TextStyle(
               fontSize: ResponsiveUtils.getSmallTextSize(context),
-              color: Colors.grey[500],
+              color: Colors.white.withOpacity(0.7),
             ),
           ),
         ],
@@ -506,27 +506,263 @@ class _HomePageState extends State<HomePage> {
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.authPrimaryColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.amber[700], size: 24),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: Colors.amber[300], size: 18),
+          ),
           SizedBox(width: 16),
           Expanded(
             child: Text(
               suggestion,
               style: TextStyle(
                 fontSize: ResponsiveUtils.getBodySize(context),
-                color: Colors.black87,
+                color: Colors.white,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDummyReport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      'Risk Analysis Report',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(),
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: EdgeInsets.all(20),
+                  children: [
+                    _buildReportSection(
+                      'Overall Risk Score',
+                      '7.2 / 10',
+                      'Medium Risk',
+                      Colors.orange,
+                      Icons.warning_amber_outlined,
+                    ),
+                    SizedBox(height: 20),
+                    _buildReportSection(
+                      'Market Risk',
+                      '6.8 / 10',
+                      'The AI education market is highly competitive with established players.',
+                      Colors.red,
+                      Icons.trending_down,
+                    ),
+                    SizedBox(height: 20),
+                    _buildReportSection(
+                      'Technical Risk',
+                      '5.5 / 10',
+                      'Technology stack is modern but requires skilled developers.',
+                      Colors.orange,
+                      Icons.code,
+                    ),
+                    SizedBox(height: 20),
+                    _buildReportSection(
+                      'Financial Risk',
+                      '8.1 / 10',
+                      'High funding requirements with uncertain revenue timeline.',
+                      Colors.red,
+                      Icons.attach_money,
+                    ),
+                    SizedBox(height: 20),
+                    _buildReportSection(
+                      'Team Risk',
+                      '4.2 / 10',
+                      'Strong founding team with relevant experience in AI and education.',
+                      Colors.green,
+                      Icons.people,
+                    ),
+                    SizedBox(height: 30),
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.authPrimaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Key Recommendations',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.authPrimaryColor,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          _buildRecommendation('Focus on unique AI differentiation in marketing'),
+                          _buildRecommendation('Develop partnerships with educational institutions early'),
+                          _buildRecommendation('Consider pilot programs to validate product-market fit'),
+                          _buildRecommendation('Secure strategic advisors from the education sector'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportSection(String title, String score, String description, Color color, IconData icon) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      score,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendation(String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: EdgeInsets.only(top: 6),
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppTheme.authPrimaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
                 height: 1.4,
               ),
             ),

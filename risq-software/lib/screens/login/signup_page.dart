@@ -4,9 +4,8 @@ import 'package:risq/theme/theme.dart';
 import 'dart:math' as math;
 import 'signin_page.dart';
 import '../pages/onboarding_page.dart';
-// import '../pages/home_page';
 import 'package:risq/utils/responsive_utils.dart';
-import 'package:risq/services/auth_service.dart';
+import 'package:risq/services/storage_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -153,20 +152,48 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
     setState(() => _errorMessage = '');
     
     // Validate form
-    if (!_validateForm()) return;
+    if (!_validateForm()) {
+      print('SignupPage: Form validation failed');
+      return;
+    }
     
     setState(() => _isLoading = true);
     
     try {
-      // Use AuthService to register the user and get JWT token
-      final result = await AuthService.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      print('SignupPage: Starting signup process...');
+      print('SignupPage: Name: "${_nameController.text.trim()}"');
+      print('SignupPage: Email: "${_emailController.text.trim()}"');
+      print('SignupPage: Password length: ${_passwordController.text.length}');
+      
+      // Check if fields are actually filled
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      
+      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+        print('SignupPage: Error - required fields are empty after trim');
+        setState(() {
+          _errorMessage = 'Please fill in all required fields.';
+        });
+        return;
+      }
+      
+      print('SignupPage: Calling StorageService.saveUserData...');
+      
+      // Save user data to local storage
+      final success = await StorageService.saveUserData(
+        name: name,
+        email: email,
+        password: password,
       );
       
-      if (result['success'] == true) {
-        print('Registration successful, navigating to onboarding...');
+      print('SignupPage: Storage result: $success');
+      
+      if (success) {
+        print('SignupPage: Data saved successfully, navigating to onboarding...');
+        
+        // Simulate a brief delay for user feedback
+        await Future.delayed(Duration(milliseconds: 800));
         
         // Navigate to onboarding page
         if (mounted) {
@@ -174,18 +201,23 @@ class _SignupPageState extends State<SignupPage> with TickerProviderStateMixin {
             context,
             MaterialPageRoute(
               builder: (context) => OnboardingPage(
-                userName: _nameController.text.trim(),
-                userEmail: _emailController.text.trim(),
+                userName: name,
+                userEmail: email,
               ),
             ),
           );
         }
       } else {
+        print('SignupPage: Failed to save data to storage');
         setState(() {
-          _errorMessage = result['message'] ?? 'Registration failed';
+          _errorMessage = 'Failed to save account data. Please try again.';
         });
       }
     } catch (e) {
+      print('SignupPage: Exception during signup: $e');
+      if (e is Error) {
+        print('SignupPage: Stack trace: ${e.stackTrace}');
+      }
       setState(() {
         _errorMessage = 'Unable to create account. Please try again.';
       });

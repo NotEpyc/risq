@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:risq/utils/responsive_utils.dart';
-import 'package:risq/services/auth_service.dart';
+import 'package:risq/services/storage_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:risq/theme/theme.dart';
 import 'dart:math' as math;
 import 'signup_page.dart';
-// import '../pages/home_page';
+import '../main_navigation.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -154,28 +154,36 @@ class _SignInPageState extends State<SignInPage> with TickerProviderStateMixin {
     }
     
     try {
-      // Use AuthService to authenticate
-      final result = await AuthService.login(
+      // Check if user has an account
+      final hasAccount = await StorageService.hasAccount();
+      if (!hasAccount) {
+        setState(() {
+          _errorMessage = 'No account found. Please sign up first.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Verify login credentials using stored data
+      final userData = await StorageService.verifyLogin(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       
-      if (result['success'] == true) {
-        // Optional: Store authentication token
-        final token = result['token'];
-        if (token != null) {
-          // You might want to store this token in SharedPreferences or secure storage
-          // await AuthService.storeAuthToken(token);
-        }
-        
-        // Navigate to home screen on successful login
+      if (userData != null) {
+        // Login successful - navigate to main navigation
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => SignupPage()),
+          MaterialPageRoute(
+            builder: (context) => MainNavigation(
+              userName: userData['name'] ?? '',
+              userEmail: userData['email'] ?? '',
+            ),
+          ),
         );
       } else {
         setState(() {
-          _errorMessage = result['message'] ?? 'Login failed';
+          _errorMessage = 'Invalid email or password. Please try again.';
         });
       }
     } catch (e) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:risq/theme/theme.dart';
 import 'package:risq/utils/responsive_utils.dart';
-import 'package:risq/services/speculation_service.dart';
-import 'package:risq/screens/pages/startup_profile_page.dart';
+import 'package:risq/screens/pages/profile_page.dart';
+import 'package:risq/screens/pages/notifications_page.dart';
 
 class SpeculationPage extends StatefulWidget {
   final String userName;
@@ -55,69 +55,35 @@ class _SpeculationPageState extends State<SpeculationPage> {
       _isLoading = true;
     });
 
-    try {
-      // Call the actual API
-      final result = await SpeculationService.submitSpeculation(
-        description: _descriptionController.text,
-        category: _selectedCategory,
-        context: _contextController.text,
-        timeline: _timelineController.text,
-        budget: _budgetController.text,
-        // TODO: Add auth token when authentication is implemented
-        // authToken: await AuthService.getAuthToken(),
-      );
+    // Simulate API call
+    await Future.delayed(Duration(seconds: 2));
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
 
-        if (result['success']) {
-          // Show result dialog with real data
-          _showSpeculationResults(result['data']);
-        } else {
-          // Show error
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Failed to analyze speculation'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Show result dialog
+      _showSpeculationResults();
     }
   }
 
-  void _showSpeculationResults([Map<String, dynamic>? analysisData]) {
-    // Use real data if available, otherwise use mock data
-    final riskScore = analysisData?['riskScore']?.toString() ?? '7.8';
-    final confidence = analysisData?['confidence']?.toString() ?? '82%';
-    final analysis = analysisData?['analysis'] ?? 
-        'This decision may increase operational complexity and burn rate. Consider implementing gradual hiring with clear performance metrics.';
-    final recommendations = analysisData?['recommendations'] as List<dynamic>? ?? [];
-    
+  void _showSpeculationResults() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.psychology, color: AppTheme.authAccentColor),
+            Icon(Icons.psychology, color: AppTheme.authAccentColor, size: 20),
             SizedBox(width: 8),
-            Text('AI Analysis Results'),
+            Expanded(
+              child: Text(
+                'AI Analysis Results',
+                style: TextStyle(fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -126,16 +92,11 @@ class _SpeculationPageState extends State<SpeculationPage> {
           children: [
             _buildResultItem('Previous Risk Score', '7.2', Colors.orange),
             SizedBox(height: 8),
-            _buildResultItem('Projected Risk Score', riskScore, 
-                double.tryParse(riskScore) != null && double.parse(riskScore) > 7.2 ? Colors.red : Colors.green),
+            _buildResultItem('Projected Risk Score', '7.8', Colors.red),
             SizedBox(height: 8),
-            _buildResultItem('Risk Change', 
-                double.tryParse(riskScore) != null ? 
-                    (double.parse(riskScore) - 7.2 > 0 ? '+${(double.parse(riskScore) - 7.2).toStringAsFixed(1)}' : '${(double.parse(riskScore) - 7.2).toStringAsFixed(1)}') : 
-                    '+0.6', 
-                double.tryParse(riskScore) != null && double.parse(riskScore) > 7.2 ? Colors.red : Colors.green),
+            _buildResultItem('Risk Change', '+0.6', Colors.red),
             SizedBox(height: 8),
-            _buildResultItem('AI Confidence', confidence, Colors.blue),
+            _buildResultItem('AI Confidence', '82%', Colors.blue),
             SizedBox(height: 16),
             Text(
               'AI Reasoning:',
@@ -143,45 +104,74 @@ class _SpeculationPageState extends State<SpeculationPage> {
             ),
             SizedBox(height: 8),
             Text(
-              analysis,
+              'This decision may increase operational complexity and burn rate. Consider implementing gradual hiring with clear performance metrics.',
               style: TextStyle(color: Colors.grey[700]),
             ),
-            if (recommendations.isNotEmpty) ...[
-              SizedBox(height: 16),
-              Text(
-                'Recommendations:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              ...recommendations.map((rec) => Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Text(
-                  '• $rec',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
-                ),
-              )).toList(),
-            ],
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Save as Speculation'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Decision confirmed! Risk profile updated.'),
-                  backgroundColor: AppTheme.authAccentColor,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Text(
+                        'Save as Speculation',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.authAccentColor,
+                SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Decision confirmed! Risk profile updated.'),
+                            backgroundColor: AppTheme.authAccentColor,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.authAccentColor,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Confirm Decision',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Text('Confirm Decision', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -192,12 +182,26 @@ class _SpeculationPageState extends State<SpeculationPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: color,
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 14),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        SizedBox(width: 8),
+        Flexible(
+          flex: 1,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -213,7 +217,7 @@ class _SpeculationPageState extends State<SpeculationPage> {
           children: [
             // Top Header
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
               ),
@@ -225,7 +229,10 @@ class _SpeculationPageState extends State<SpeculationPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const StartupProfilePage(),
+                          builder: (context) => ProfilePage(
+                            userName: widget.userName,
+                            userEmail: widget.userEmail,
+                          ),
                         ),
                       );
                     },
@@ -235,6 +242,7 @@ class _SpeculationPageState extends State<SpeculationPage> {
                       decoration: BoxDecoration(
                         color: AppTheme.authAccentColor,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Center(
                         child: Text(
@@ -250,39 +258,50 @@ class _SpeculationPageState extends State<SpeculationPage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Decision Speculation',
-                        style: AppTheme.headingTextStyle.copyWith(
-                          fontSize: ResponsiveUtils.getBodySize(context) + 4,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        'Test your business decisions',
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.getSmallTextSize(context),
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
+                  
                   Spacer(),
+                  
                   // Notification Button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.grey[700],
-                      size: 20,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NotificationsListPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.grey[700],
+                              size: 20,
+                            ),
+                          ),
+                          // Notification badge
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -335,45 +354,42 @@ class _SpeculationPageState extends State<SpeculationPage> {
                         ),
                       ),
                       SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedCategory,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
                           ),
-                          items: _categories.map((category) {
-                            return DropdownMenuItem<String>(
-                              value: category['value'],
-                              child: Row(
-                                children: [
-                                  Icon(category['icon'], size: 20, color: Colors.grey[600]),
-                                  SizedBox(width: 12),
-                                  Text(category['label']),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value!;
-                            });
-                          },
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppTheme.authAccentColor, width: 2),
+                          ),
                         ),
+                        items: _categories.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category['value'],
+                            child: Row(
+                              children: [
+                                Icon(category['icon'], size: 20, color: Colors.grey[600]),
+                                SizedBox(width: 12),
+                                Text(category['label']),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value!;
+                          });
+                        },
                       ),
                       SizedBox(height: 20),
                       
@@ -431,7 +447,14 @@ class _SpeculationPageState extends State<SpeculationPage> {
                             elevation: 0,
                           ),
                           child: _isLoading
-                              ? CircularProgressIndicator(color: Colors.white)
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -481,47 +504,44 @@ class _SpeculationPageState extends State<SpeculationPage> {
           ),
         ),
         SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          style: AppTheme.inputTextStyle.copyWith(
+            fontSize: ResponsiveUtils.getBodySize(context),
+            color: Colors.black87,
           ),
-          child: TextFormField(
-            controller: controller,
-            validator: validator,
-            maxLines: maxLines,
-            keyboardType: keyboardType,
-            style: AppTheme.inputTextStyle.copyWith(
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixText: prefix,
+            hintStyle: TextStyle(
+              color: Colors.grey[500],
               fontSize: ResponsiveUtils.getBodySize(context),
-              color: Colors.black87,
             ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              prefixText: prefix,
-              hintStyle: TextStyle(
-                color: Colors.grey[500],
-                fontSize: ResponsiveUtils.getBodySize(context),
-              ),
-              contentPadding: EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.authAccentColor, width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red, width: 1),
-              ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.all(16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppTheme.authAccentColor, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 2),
             ),
           ),
         ),

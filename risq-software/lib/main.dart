@@ -56,7 +56,63 @@ class RisQ extends StatelessWidget {
           child: child!,
         );
       },
-      home: SignInPage(),
+      home: SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Add a small delay for better UX
+    await Future.delayed(Duration(milliseconds: 1500));
+    
+    // Always navigate to sign-in page (no auto-login)
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => SignInPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // App Logo or Name
+            Text(
+              'RisQ',
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.authAccentColor,
+              ),
+            ),
+            SizedBox(height: 20),
+            // Loading indicator
+            CircularProgressIndicator(
+              color: AppTheme.authAccentColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

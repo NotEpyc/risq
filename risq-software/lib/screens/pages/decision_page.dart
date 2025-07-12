@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:risq/theme/theme.dart';
 import 'package:risq/utils/responsive_utils.dart';
-import 'package:risq/screens/pages/startup_profile_page.dart';
+import 'package:risq/screens/pages/profile_page.dart';
+import 'package:risq/screens/pages/notifications_page.dart';
 
 class DecisionPage extends StatefulWidget {
   final String userName;
@@ -19,16 +20,24 @@ class DecisionPage extends StatefulWidget {
 
 class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -84,7 +93,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
           children: [
             // Top Header
             Container(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
               ),
@@ -96,7 +105,10 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const StartupProfilePage(),
+                          builder: (context) => ProfilePage(
+                            userName: widget.userName,
+                            userEmail: widget.userEmail,
+                          ),
                         ),
                       );
                     },
@@ -106,6 +118,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                       decoration: BoxDecoration(
                         color: AppTheme.authAccentColor,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Center(
                         child: Text(
@@ -121,42 +134,99 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Decision History',
-                        style: AppTheme.headingTextStyle.copyWith(
-                          fontSize: ResponsiveUtils.getBodySize(context) + 4,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        'Track your business decisions',
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.getSmallTextSize(context),
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
+                  
                   Spacer(),
+                  
                   // Notification Button
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.grey[700],
-                      size: 20,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NotificationsListPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.grey[700],
+                              size: 20,
+                            ),
+                          ),
+                          // Notification badge
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
+              ),
+            ),
+            
+            // Search Bar
+            Container(
+              color: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search decisions...',
+                    hintStyle: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: ResponsiveUtils.getBodySize(context),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Colors.grey[500],
+                      size: 20,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              color: Colors.grey[500],
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  style: TextStyle(
+                    fontSize: ResponsiveUtils.getBodySize(context),
+                    color: Colors.black87,
+                  ),
+                ),
               ),
             ),
             
@@ -196,33 +266,44 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
   }
 
   Widget _buildDecisionList(List<Map<String, dynamic>> decisions, {required bool isConfirmed}) {
-    if (decisions.isEmpty) {
-      return _buildEmptyState(isConfirmed);
+    // Filter decisions based on search query
+    final filteredDecisions = decisions.where((decision) {
+      if (_searchQuery.isEmpty) return true;
+      return decision['description'].toString().toLowerCase().contains(_searchQuery) ||
+             decision['category'].toString().toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    if (filteredDecisions.isEmpty) {
+      return _buildEmptyState(isConfirmed, hasSearchQuery: _searchQuery.isNotEmpty);
     }
 
     return ListView.builder(
       padding: EdgeInsets.all(20),
-      itemCount: decisions.length,
+      itemCount: filteredDecisions.length,
       itemBuilder: (context, index) {
-        final decision = decisions[index];
+        final decision = filteredDecisions[index];
         return _buildDecisionCard(decision, isConfirmed);
       },
     );
   }
 
-  Widget _buildEmptyState(bool isConfirmed) {
+  Widget _buildEmptyState(bool isConfirmed, {bool hasSearchQuery = false}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isConfirmed ? Icons.check_circle_outline : Icons.psychology_outlined,
+            hasSearchQuery 
+                ? Icons.search_off
+                : (isConfirmed ? Icons.check_circle_outline : Icons.psychology_outlined),
             size: 64,
             color: Colors.grey[400],
           ),
           SizedBox(height: 16),
           Text(
-            isConfirmed ? 'No confirmed decisions yet' : 'No speculative decisions yet',
+            hasSearchQuery 
+                ? 'No decisions found'
+                : (isConfirmed ? 'No confirmed decisions yet' : 'No speculative decisions yet'),
             style: TextStyle(
               fontSize: ResponsiveUtils.getBodySize(context) + 2,
               fontWeight: FontWeight.w600,
@@ -231,9 +312,11 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
           ),
           SizedBox(height: 8),
           Text(
-            isConfirmed 
-                ? 'Decisions you confirm will appear here'
-                : 'Test decisions in the Speculation tab',
+            hasSearchQuery
+                ? 'Try adjusting your search terms'
+                : (isConfirmed 
+                    ? 'Decisions you confirm will appear here'
+                    : 'Test decisions in the Speculation tab'),
             style: TextStyle(
               fontSize: ResponsiveUtils.getBodySize(context),
               color: Colors.grey[500],
@@ -252,18 +335,13 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.authPrimaryColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isConfirmed 
-              ? Colors.green.withOpacity(0.3) 
-              : Colors.orange.withOpacity(0.3),
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -279,8 +357,8 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: isConfirmed 
-                        ? Colors.green.withOpacity(0.1) 
-                        : Colors.orange.withOpacity(0.1),
+                        ? Colors.green.withOpacity(0.2) 
+                        : Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -289,7 +367,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                       Icon(
                         isConfirmed ? Icons.check_circle : Icons.help_outline,
                         size: 16,
-                        color: isConfirmed ? Colors.green[700] : Colors.orange[700],
+                        color: isConfirmed ? Colors.green[300] : Colors.orange[300],
                       ),
                       SizedBox(width: 4),
                       Text(
@@ -297,7 +375,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                         style: TextStyle(
                           fontSize: ResponsiveUtils.getSmallTextSize(context),
                           fontWeight: FontWeight.w600,
-                          color: isConfirmed ? Colors.green[700] : Colors.orange[700],
+                          color: isConfirmed ? Colors.green[300] : Colors.orange[300],
                         ),
                       ),
                     ],
@@ -315,7 +393,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
               style: TextStyle(
                 fontSize: ResponsiveUtils.getBodySize(context) + 1,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.white,
                 height: 1.4,
               ),
             ),
@@ -328,21 +406,21 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                   child: _buildMetricItem(
                     'Risk Change',
                     '${isPositiveChange ? '+' : ''}${riskChange.toStringAsFixed(1)}',
-                    isPositiveChange ? Colors.red : Colors.green,
+                    isPositiveChange ? Colors.red[300]! : Colors.green[300]!,
                   ),
                 ),
                 Expanded(
                   child: _buildMetricItem(
                     'Confidence',
                     '${(decision['confidence'] * 100).toInt()}%',
-                    Colors.blue,
+                    Colors.blue[300]!,
                   ),
                 ),
                 Expanded(
                   child: _buildMetricItem(
                     'Date',
                     decision['date'],
-                    Colors.grey[600]!,
+                    Colors.white.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -358,14 +436,14 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                         _showDecisionDetails(decision);
                       },
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppTheme.authAccentColor),
+                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
                         'View Details',
-                        style: TextStyle(color: AppTheme.authAccentColor),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                   ),
@@ -376,7 +454,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
                         _confirmDecision(decision);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.authAccentColor,
+                        backgroundColor: Colors.white.withOpacity(0.2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -401,7 +479,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: categoryData['color'].withOpacity(0.1),
+        color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -410,7 +488,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
           Icon(
             categoryData['icon'],
             size: 14,
-            color: categoryData['color'],
+            color: Colors.white.withOpacity(0.8),
           ),
           SizedBox(width: 4),
           Text(
@@ -418,7 +496,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
             style: TextStyle(
               fontSize: ResponsiveUtils.getSmallTextSize(context) - 1,
               fontWeight: FontWeight.w500,
-              color: categoryData['color'],
+              color: Colors.white.withOpacity(0.8),
             ),
           ),
         ],
@@ -448,7 +526,7 @@ class _DecisionPageState extends State<DecisionPage> with TickerProviderStateMix
           label,
           style: TextStyle(
             fontSize: ResponsiveUtils.getSmallTextSize(context),
-            color: Colors.grey[600],
+            color: Colors.white.withOpacity(0.8),
           ),
         ),
         SizedBox(height: 4),

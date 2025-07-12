@@ -5,7 +5,6 @@ import 'package:video_player/video_player.dart';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'package:risq/screens/main_navigation.dart';
-import 'package:risq/services/startup_service.dart';
 
 class OnboardingPage extends StatefulWidget {
   final String userName;
@@ -22,9 +21,6 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  // Configuration - Server is now deployed
-  static const bool _useServerAPI = true;
-  
   final PageController _pageController = PageController();
   int _currentStep = 0;
   final int _totalSteps = 4;
@@ -127,6 +123,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     
     // Add initial education entry
     _addEducation();
+    
+    // No authentication verification needed for dummy data
+    print('Using dummy data - no authentication required');
   }
 
   void _initializeVideo() {
@@ -176,7 +175,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _competitiveAdvantageController.dispose();
     _goToMarketController.dispose();
     
-    // Step 3 controllers
+    //
     _implementationPlanController.dispose();
     _developmentTimelineController.dispose();
     
@@ -215,9 +214,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
+  // Helper method to convert team size to appropriate range string
+  String _getTeamSizeRange(int teamSize) {
+    if (teamSize <= 1) return "1";
+    if (teamSize <= 5) return "1-5";
+    if (teamSize <= 10) return "6-10";
+    if (teamSize <= 20) return "11-20";
+    if (teamSize <= 50) return "21-50";
+    return "50+";
+  }
+
   void _nextStep() {
-    if (_formKeys[_currentStep].currentState!.validate()) {
+    print('=== FORM VALIDATION ===');
+    print('Current step: $_currentStep');
+    print('Total steps: $_totalSteps');
+    print('Validating form for step: $_currentStep');
+    
+    final isValid = _formKeys[_currentStep].currentState!.validate();
+    print('Form validation result: $isValid');
+    
+    if (isValid) {
       if (_currentStep < _totalSteps - 1) {
+        print('Moving to next step...');
         setState(() {
           _currentStep++;
         });
@@ -226,8 +244,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
           curve: Curves.easeInOut,
         );
       } else {
+        print('Last step - submitting onboarding...');
         _submitOnboarding();
       }
+    } else {
+      print('❌ Form validation failed for step $_currentStep');
+      setState(() {
+        _errorMessage = 'Please fill in all required fields correctly.';
+      });
     }
   }
 
@@ -250,6 +274,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     });
 
     try {
+      print('=== DUMMY ONBOARDING SUBMISSION ===');
+      print('User: ${widget.userName} (${widget.userEmail})');
+      
       // Create the JSON payload with validation
       final payload = {
         "name": _companyNameController.text.trim(),
@@ -258,8 +285,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         "sector": _sectorController.text.trim(),
         "funding_stage": _fundingStage,
         "location": _locationController.text.trim(),
-        "founded_date": DateTime.now().toIso8601String(),
-        "team_size": _teamSize,
+        "founded_date": DateTime.now().toUtc().toIso8601String().split('T')[0],
+        "team_size": _getTeamSizeRange(_teamSize),
         "website": _websiteController.text.trim().isEmpty ? null : _websiteController.text.trim(),
         "business_model": _businessModelController.text.trim(),
         "revenue_streams": _revenueStreams.where((s) => s.isNotEmpty).toList(),
@@ -300,59 +327,74 @@ class _OnboardingPageState extends State<OnboardingPage> {
       // Remove null values from payload
       payload.removeWhere((key, value) => value == null);
 
-      if (_useServerAPI) {
-        print('Submitting onboarding data to server...');
-        print('Payload keys: ${payload.keys.toList()}');
-        
-        // Use StartupService to submit onboarding data
-        final result = await StartupService.onboardStartup(startupData: payload);
-        
-        print('Server response: $result');
-        
-        if (result['success'] == true) {
-          print('Onboarding successful, navigating to main app...');
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MainNavigation(
-                  userName: widget.userName,
-                  userEmail: widget.userEmail,
-                ),
-              ),
-            );
-          }
-        } else {
-          print('Onboarding failed: ${result['message']}');
-          setState(() {
-            _errorMessage = result['message'] ?? 'Failed to submit startup data';
-          });
+      // Validate required fields
+      final founderDetails = (payload["founder_details"] as List)[0];
+      final requiredFields = {
+        'name': payload["name"],
+        'description': payload["description"],
+        'industry': payload["industry"],
+        'sector': payload["sector"],
+        'founder_name': founderDetails["name"],
+        'founder_email': founderDetails["email"],
+        'founder_role': founderDetails["role"],
+      };
+      
+      final emptyFields = <String>[];
+      requiredFields.forEach((key, value) {
+        if (value == null || value.toString().trim().isEmpty) {
+          emptyFields.add(key);
         }
-      } else {
-        // For now, just log the payload and navigate to display page
-        print('Startup Data Payload:');
-        print(json.encode(payload));
-        
-        // Simulate server delay
-        await Future.delayed(Duration(milliseconds: 1500));
-        
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MainNavigation(
-                userName: widget.userName,
-                userEmail: widget.userEmail,
-              ),
-            ),
-          );
+      });
+      
+      if (emptyFields.isNotEmpty) {
+        print('❌ Empty required fields: $emptyFields');
+        setState(() {
+          _errorMessage = 'Required fields are empty: ${emptyFields.join(", ")}';
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // Validate numeric fields
+      final numericFields = ['initial_investment', 'monthly_burn_rate', 'projected_revenue', 'funding_requirement'];
+      for (final field in numericFields) {
+        final value = payload[field];
+        if (value != null && value is! num) {
+          print('❌ $field is not a number: $value (${value.runtimeType})');
+          setState(() {
+            _errorMessage = 'Invalid numeric value for $field';
+            _isLoading = false;
+          });
+          return;
         }
       }
+
+      // Print the dummy payload
+      print('=== DUMMY STARTUP DATA ===');
+      print(json.encode(payload));
+      print('=== END DUMMY DATA ===');
+      
+      // Simulate server processing delay
+      await Future.delayed(Duration(milliseconds: 1500));
+      
+      print('✅ Dummy onboarding completed successfully!');
+      
+      // Navigate to main application
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainNavigation(
+              userName: widget.userName,
+              userEmail: widget.userEmail,
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      // Enhanced error handling with debugging information
-      print('Onboarding submission error: $e');
+      print('Dummy onboarding error: $e');
       setState(() {
-        _errorMessage = 'Unable to submit your information: ${e.toString()}';
+        _errorMessage = 'Unable to process your information: ${e.toString()}';
       });
     } finally {
       if (mounted) {

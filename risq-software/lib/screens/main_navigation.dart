@@ -27,7 +27,11 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _pages = [
-      HomePage(userName: widget.userName, userEmail: widget.userEmail),
+      HomePage(
+        userName: widget.userName, 
+        userEmail: widget.userEmail,
+        onNavigateToTab: _onTabTapped,
+      ),
       SpeculationPage(userName: widget.userName, userEmail: widget.userEmail),
       DecisionPage(userName: widget.userName, userEmail: widget.userEmail),
     ];
